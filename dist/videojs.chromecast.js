@@ -1,10 +1,10 @@
-/*! videojs-chromecast - v1.1.1 - 2015-04-15
+/*! videojs-chromecast - v1.1.1 - 2015-12-11
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 (function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    hasProp = {}.hasOwnProperty;
+  var __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   vjs.addLanguage("de", {
     "CASTING TO": "WIEDERGABE AUF"
@@ -19,8 +19,8 @@
     return this.controlBar.addChild(this.chromecastComponent);
   });
 
-  vjs.ChromecastComponent = (function(superClass) {
-    extend(ChromecastComponent, superClass);
+  vjs.ChromecastComponent = (function(_super) {
+    __extends(ChromecastComponent, _super);
 
     ChromecastComponent.prototype.buttonText = "Chromecast";
 
@@ -45,6 +45,10 @@
     ChromecastComponent.prototype.timer = null;
 
     ChromecastComponent.prototype.timerStep = 1000;
+
+    ChromecastComponent.prototype.currentSrc = null;
+
+    ChromecastComponent.prototype.currentType = null;
 
     function ChromecastComponent(player, settings) {
       this.settings = settings;
@@ -101,16 +105,18 @@
     };
 
     ChromecastComponent.prototype.onSessionSuccess = function(session) {
-      var image, key, loadRequest, mediaInfo, ref, value;
+      var image, key, loadRequest, mediaInfo, value, _ref;
       vjs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
-      mediaInfo = new chrome.cast.media.MediaInfo(this.player_.currentSrc(), this.player_.currentType());
+      this.currentSrc = this.player_.currentSrc();
+      this.currentType = this.player_.currentType();
+      mediaInfo = new chrome.cast.media.MediaInfo(this.currentSrc, this.currentType);
       if (this.settings.metadata) {
         mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-        ref = this.settings.metadata;
-        for (key in ref) {
-          value = ref[key];
+        _ref = this.settings.metadata;
+        for (key in _ref) {
+          value = _ref[key];
           mediaInfo.metadata[key] = value;
         }
         if (this.player_.options_.poster) {
@@ -257,17 +263,28 @@
     };
 
     ChromecastComponent.prototype.onStopAppSuccess = function() {
+      var currentMediaTime;
+      if (!this.casting) {
+        return;
+      }
       clearInterval(this.timer);
       this.casting = false;
       this.removeClass("connected");
-      this.player_.src(this.player_.options_["sources"]);
+      this.player_.src({
+        src: this.currentSrc,
+        type: this.currentType
+      });
       if (!this.paused) {
+        currentMediaTime = this.currentMediaTime;
         this.player_.one('seeked', function() {
+          this.player_.currentTime(currentMediaTime);
           return this.player_.play();
         });
       }
       this.player_.currentTime(this.currentMediaTime);
-      this.player_.tech.setControls(false);
+      if (this.player_.tech.setControls) {
+        this.player_.tech.setControls(false);
+      }
       this.player_.options_.inactivityTimeout = this.inactivityTimeout;
       this.apiMedia = null;
       return this.apiSession = null;
@@ -290,8 +307,8 @@
 
   })(vjs.Button);
 
-  vjs.ChromecastTech = (function(superClass) {
-    extend(ChromecastTech, superClass);
+  vjs.ChromecastTech = (function(_super) {
+    __extends(ChromecastTech, _super);
 
     ChromecastTech.isSupported = function() {
       return this.player_.chromecastComponent.apiInitialized;
@@ -314,7 +331,7 @@
     ChromecastTech.prototype.createEl = function() {
       var element;
       element = document.createElement("div");
-      element.id = this.player_.id_ + "_chromecast_api";
+      element.id = "" + this.player_.id_ + "_chromecast_api";
       element.className = "vjs-tech vjs-tech-chromecast";
       element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
       element.player = this.player_;
