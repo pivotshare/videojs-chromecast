@@ -215,7 +215,10 @@ class vjs.ChromecastComponent extends vjs.Button
 
     # Resume playback if not paused when casting is stopped
     unless @paused
+      # Close over current currentMediaTime
+      currentMediaTime = @currentMediaTime
       @player_.one 'seeked', ->
+        @player_.currentTime(currentMediaTime)
         @player_.play()
     @player_.currentTime(@currentMediaTime)
 
