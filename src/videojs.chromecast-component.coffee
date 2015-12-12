@@ -15,6 +15,9 @@ class vjs.ChromecastComponent extends vjs.Button
   timer: null
   timerStep: 1000
 
+  currentSrc: null
+  currentType: null
+
   constructor: (player, @settings) ->
     super player, @settings
 
@@ -66,7 +69,10 @@ class vjs.ChromecastComponent extends vjs.Button
     @apiSession = session
     @addClass "connected"
 
-    mediaInfo = new chrome.cast.media.MediaInfo @player_.currentSrc(), @player_.currentType()
+    @currentSrc = @player_.currentSrc()
+    @currentType = @player_.currentType()
+
+    mediaInfo = new chrome.cast.media.MediaInfo @currentSrc, @currentType
 
     if @settings.metadata
       mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata()
@@ -203,7 +209,9 @@ class vjs.ChromecastComponent extends vjs.Button
     @casting = false
     @removeClass "connected"
 
-    @player_.src @player_.options_["sources"]
+    @player_.src
+      src: @currentSrc
+      type: @currentType
 
     # Resume playback if not paused when casting is stopped
     unless @paused
