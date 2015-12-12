@@ -220,7 +220,8 @@ class vjs.ChromecastComponent extends vjs.Button
     @player_.currentTime(@currentMediaTime)
 
     # Hide the default HTML5 player controls.
-    @player_.tech.setControls(false)
+    if @player_.tech.setControls
+      @player_.tech.setControls(false)
 
     # Enable user activity timeout
     @player_.options_.inactivityTimeout = @inactivityTimeout
