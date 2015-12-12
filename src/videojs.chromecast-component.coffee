@@ -195,6 +195,10 @@ class vjs.ChromecastComponent extends vjs.Button
 
   # Callback when the app has been successfully stopped
   onStopAppSuccess: ->
+
+    # Sometimes @apiSession.stop will call this twice resulting in double load
+    return if not @casting
+
     clearInterval @timer
     @casting = false
     @removeClass "connected"
